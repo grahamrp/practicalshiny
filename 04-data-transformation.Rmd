@@ -1,0 +1,119 @@
+```{r setup, echo=FALSE}
+library(knitr)
+library(shiny)
+library(magrittr)
+library(webshot)
+
+temp_screenshots <- "temp_screenshots"
+
+# App screenshotter
+make_screenshot_file <- function(app, tmpdir = "temp_screenshots", ...) {
+  screenshot_file <- tempfile(tmpdir = tmpdir, fileext = ".png")
+  webshot::appshot(app, file = screenshot_file, ...)
+  screenshot_file
+}
+
+# Clean up any existing temporary screenshots
+unlink(paste0(temp_screenshots, "/*"))
+
+# Define minimal server function for shiny apps
+minimal_server <- function(input, output) {}
+```
+
+# Data Transformation
+
+## The Scenario
+
+R can read and write many dataset file formats, from the humble CSV file to the ubiquitous Excel workbook. In this chapter we will create a utility app that brings R's flexible file conversion to the masses (or non-R programmers, at least).
+
+We're going to start off with a simple app that allows a user to upload an Excel file and then download it as a CSV file. This will enable us to explore two core shiny widgets, the `fileInput` and the `downloadButton`.
+
+Once we've got our basic app working we'll add more features to
+
+  - Download multiple files
+  - Add more file format conversions
+  - Edit the file before it is downloaded
+
+Each of these will present us with some challenges, and we'll see how to overcome them.
+
+## Design
+
+Even with such a simple app we still need to formalise what the user wants to do:
+
+  - Select an Excel file from their computer
+  - Upload it to the app
+  - See a preview of the file in a table
+  - Click a download button to save the file as a CSV with a chosen filename
+  
+If we had a real user, playing explicit requirements like these back to them will ensure we've understood what they want, and may help to draw out clarifications. For example, perhaps the files are not on their computer, but in the cloud somewhere; or maybe the Excel files can't be previewed in a table because they contain charts and graphics. However, for now we will assume the simpler case!
+
+### The User Interface
+
+Our UI requires three components, the `fileInput` widget, a `downloadButton`, and, if the user has uploaded a file, a preview of the data.
+
+```{r, echo=FALSE, message=FALSE, fig.cap="App UI mockup"}
+
+shinyApp(
+  ui = fluidPage(
+    fileInput("file_in", "Upload an Excel File", placeholder = ""),
+    downloadButton("download", "Download as CSV"),
+    h2("Data Preview"),
+    tableOutput("preview")
+  ),
+  server = function(input, output) {
+    output$preview <- renderTable(head(iris))
+  }) %>% 
+  make_screenshot_file(vheight = 200) %>%   
+  include_graphics()
+```
+  
+Even with this simple UI we have some decisions to make on layout. We could have layed out the elements to follow the user's workflow:
+
+  - upload a file
+  - see the preview
+  - download the file
+
+This would be fine, but we don't want the Download button to move around as the preview expands or collapses as this will provide an inconsistent interface. For now, we'll arrange the persistent elements together, and the optional preview element below them.
+
+TODO: Less of a "lets get it working" then fix the UI approach. Why not design it right first-off?
+
+TODO: draw out some basic principles from "don't make me think", or "Designing Interfaces" and apply them consistently throughout.
+  
+## Coding
+
+### Uploading Files
+
+Let's start by getting the file upload working using the `fileInput` widget. For the UI side, it's a similar widget to the others in that it needs an `inputId` and `label`.
+
+```{r}
+ui <- fluidPage(
+  fileInput("file_input", "Upload an Excel File")
+)
+```
+
+```{r, echo=FALSE, message=FALSE}
+
+shinyApp(ui = ui, server = minimal_server) %>% 
+  make_screenshot_file(vheight = 100) %>% 
+  include_graphics()
+```
+
+When the user clicks on the Browse button they will see their standard file picker for whatever operating system/web browser they are using. This is great as it means we don't have to program our own UI for this common and well understood interaction.
+
+![Screenshot of Browser File Upload](screenshots/placeholder.png)
+
+#### How it works on the server
+
+For the server The `fileInput` widget is a little different to the other input widgets. Ordinarily a user provides a value to the app using the widget (e.g. picks a number on a `sliderInput`) and that we can pick that up in our reactive components on the server. In this case the user is providing a file as input, and that file resides on their computer. When the user selects a file from the 
+
+  
+## Practical Tips
+
+Stuff to pepper throughout chapter under "Practical Tip" sidebars.
+
+  - What are the best apps for reading/writing file formats
+  - What about all those Excel readers/writers?
+  - max.file.size option
+  - mutiple file downloads (zip, cross-platform zip)
+  - don't rename files in the app, just let the browser do it
+  
